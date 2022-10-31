@@ -22,7 +22,7 @@
 # 
 # At the end of the notebook, you will find directions for how to submit your work.  Let's get started by importing the necessary libraries and reading in the data.
 
-# In[1]:
+# In[35]:
 
 
 import pandas as pd
@@ -42,7 +42,7 @@ del df_content['Unnamed: 0']
 df.head()
 
 
-# In[2]:
+# In[36]:
 
 
 # Show df_content to get an idea of the data
@@ -55,72 +55,72 @@ df_content.head()
 # 
 # `1.` What is the distribution of how many articles a user interacts with in the dataset?  Provide a visual and descriptive statistics to assist with giving a look at the number of times each user interacts with an article.  
 
-# In[3]:
+# In[37]:
 
 
-df.shape
+df.shape[0]
 
 
-# In[4]:
+# In[38]:
 
 
 df.info()
 
 
-# In[5]:
+# In[39]:
 
 
 df.describe()
 
 
-# In[6]:
+# In[40]:
 
 
 df_content.shape
 
 
-# In[7]:
+# In[41]:
 
 
 df_content.info()
 
 
-# In[8]:
+# In[42]:
 
 
 df_content.describe()
 
 
-# In[9]:
+# In[43]:
 
 
-df.groupby(['email']).count().median()
+df.groupby(['email']).count().median()[0]
 
 
-# In[10]:
+# In[44]:
 
 
-df.groupby(['email']).count().sort_values('title').tail()
+df.groupby(['email']).count().sort_values('title').tail(1)
 
 
-# In[11]:
+# In[45]:
 
 
 # Fill in the median and maximum number of user_article interactios below
 
-median_val = 3 # 50% of individuals interact with ____ number of articles or fewer.
+median_val = df.groupby(['email']).count().median()[0] # 50% of individuals interact with ____ number of articles or fewer.
 max_views_by_user = 364 # The maximum number of user-article interactions by any 1 user is ______.
 
 
 # `2.` Explore and remove duplicate articles from the **df_content** dataframe.  
 
-# In[12]:
+# In[46]:
 
 
 # Find and explore duplicate articles
 
 
-# In[13]:
+# In[47]:
 
 
 # Remove any rows that have the same article_id - only keep the first
@@ -128,14 +128,14 @@ max_views_by_user = 364 # The maximum number of user-article interactions by any
 #df_content.head()
 
 
-# In[14]:
+# In[48]:
 
 
 df_content = df_content.drop_duplicates()
 df_content.head()
 
 
-# In[15]:
+# In[49]:
 
 
 df_content.shape
@@ -148,58 +148,75 @@ df_content.shape
 # **c.** The number of unique users in the dataset. (excluding null values) <br>
 # **d.** The number of user-article interactions in the dataset.
 
-# In[16]:
+# In[50]:
 
 
-df.nunique()
+df.nunique()[0]
 
 
-# In[17]:
+# In[51]:
 
 
-df_content.nunique()
+df_content.nunique()[2]
 
 
-# In[18]:
+# In[73]:
 
 
-unique_articles = 714 # The number of unique articles that have at least one interaction
-total_articles = 1051 # The number of unique articles on the IBM platform
-unique_users = 5148 # The number of unique users
-user_article_interactions = 45993 # The number of user-article interactions
+unique_articles = df.nunique()[0] # The number of unique articles that have at least one interaction
+total_articles = df_content.nunique()[2] # The number of unique articles on the IBM platform
+unique_users = df['email'].nunique() # The number of unique users
+user_article_interactions = df.shape[0] # The number of user-article interactions
 
 
 # `4.` Use the cells below to find the most viewed **article_id**, as well as how often it was viewed.  After talking to the company leaders, the `email_mapper` function was deemed a reasonable way to map users to ids.  There were a small number of null values, and it was found that all of these null values likely belonged to a single user (which is how they are stored using the function below).
 
-# In[19]:
+# In[53]:
 
 
 df.groupby(['article_id']).count().sort_values('title').tail()
 
 
-# In[20]:
+# In[72]:
 
 
-df.groupby(['article_id']).count().sort_values('title', ascending=False).head()
+df.groupby(['article_id']).count().sort_values('title', ascending=False).head(1)
 
 
-# In[21]:
+# In[61]:
 
 
-df.groupby('article_id').count().max()
+df.groupby('article_id').count().max().title
 
 
-# In[22]:
+# In[58]:
 
 
 df[df.article_id == 1330.0].shape
 
 
-# In[23]:
+# In[75]:
 
 
 most_viewed_article_id = "1429.0" # The most viewed article in the dataset as a string with one value following the decimal 
-max_views = 937 # The most viewed article in the dataset was viewed how many times?
+max_views = df[['email','article_id']].groupby(['email']).count().describe().max() # The most viewed article in the dataset was viewed how many times?
+
+
+# In[77]:
+
+
+# Histogram for distribution of user interaction with articles 
+plt.figure(figsize=(18,8))
+histogram_bins = [0,1,3,7,14,20,30,50,100,150,200,500]
+histogram_ticks = np.array([0.5, 1,3,7,14,20,30,50,100,150,200,500,1000])
+plt.hist(df[['email','article_id']].groupby(['email']).count()['article_id'],bins=histogram_bins,ec='black')
+plt.yscale('linear')
+plt.xscale('log')
+plt.xticks(histogram_ticks,histogram_ticks.astype(str))
+plt.title('Distribution of user interactions with articles - log scale')
+plt.xlabel('Number of article views - log scale')
+plt.ylabel('User count - log scale')
+plt.show()
 
 
 # In[24]:
@@ -1160,7 +1177,12 @@ plt.legend(loc='best');
 # `6.` Use the cell below to comment on the results you found in the previous question. Given the circumstances of your results, discuss what you might do to determine if the recommendations you make with any of the above recommendation systems are an improvement to how users currently find articles? 
 
 # **Your response here.** 
-# We can use A/B tests with a control and an experiment group to see if the users in the experiment group find better articles.
+# Is accuracy a good metric to use here in this case? Does it provide us with a fair assessment of the model's performance?
+# Accuracy is not a good metric in this case because the training and testing sets are very imbalanced. F-beta score with an emphasis on precision for minimizing the false positives could be a better metric in this case.
+# Is the current assessment framework robust enough to make conclusive results about the model? Think about the number of train and test users. How many users exist in your test set for whom you can make predictions? Is it sufficient?
+# We can only predict for 20 users in our test ser. Therefore we have the cold-start problem and the current model in not robust. 
+# How will you separate the user groups? Will it be based on userIDs, cookies, devices, IP addresses? How long will we run the experiment? What metrics will be tracked during this experiment?
+# We can use A/B tests with a control and an experiment group to see if the users in the experiment group find better articles. We will separate the users in two group: in the control group, the users will use the current way of finding articles, in the experiment group the users will get the recommendation system. We can separate the users by userIDs. We can run the experiment for one month.
 
 # <a id='conclusions'></a>
 # ### Extras
@@ -1182,7 +1204,7 @@ plt.legend(loc='best');
 # 
 # > Once you've done this, you can submit your project by clicking on the "Submit Project" button in the lower right here. This will create and submit a zip file with this .ipynb doc and the .html or .pdf version you created. Congratulations! 
 
-# In[89]:
+# In[78]:
 
 
 from subprocess import call
